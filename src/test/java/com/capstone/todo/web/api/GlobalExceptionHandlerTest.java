@@ -71,6 +71,18 @@ class GlobalExceptionHandlerTest {
             .andExpect(result -> assertGeneratedCorrelationIdHeaderAndBodyMatch(result));
     }
 
+    @WithMockUser
+    @org.testng.annotations.Test
+    void validationError_withDisallowedCharactersInHeader_returns400_andGeneratedCorrelationId() throws Exception {
+        mockMvc.perform(post("/api/test/validate")
+                .header(CorrelationIdFilter.CORRELATION_ID_HEADER, "abc/def")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(header().exists(CorrelationIdFilter.CORRELATION_ID_HEADER))
+            .andExpect(result -> assertGeneratedCorrelationIdHeaderAndBodyMatch(result));
+    }
+
     private void assertGeneratedCorrelationIdHeaderAndBodyMatch(MvcResult result) throws Exception {
         String headerCorrelationId = result.getResponse().getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER);
         Assert.assertNotNull(headerCorrelationId, "X-Correlation-ID response header must be present");
