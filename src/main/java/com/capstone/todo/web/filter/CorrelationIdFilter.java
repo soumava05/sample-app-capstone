@@ -49,7 +49,11 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
         }
 
         for (int i = 0; i < trimmed.length(); i++) {
-            if (Character.isISOControl(trimmed.charAt(i))) {
+            char ch = trimmed.charAt(i);
+            if (Character.isISOControl(ch)) {
+                return null;
+            }
+            if (!(Character.isLetterOrDigit(ch) || ch == '-' || ch == '_' || ch == '.' )) {
                 return null;
             }
         }
