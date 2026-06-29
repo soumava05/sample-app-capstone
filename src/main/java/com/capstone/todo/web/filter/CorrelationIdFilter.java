@@ -38,6 +38,18 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
         }
     }
 
+    /**
+     * Normalizes correlation id received from {@link #CORRELATION_ID_HEADER}.
+     * <ul>
+     *   <li>trims leading/trailing whitespace</li>
+     *   <li>rejects empty values</li>
+     *   <li>rejects values longer than {@value #MAX_CORRELATION_ID_LENGTH}</li>
+     *   <li>rejects ISO control characters</li>
+     *   <li>allows only {@code [A-Za-z0-9._-]} to prevent log/header injection</li>
+     * </ul>
+     *
+     * @return normalized id or {@code null} if it should be server-generated.
+     */
     private static String normalizeCorrelationId(String correlationId) {
         if (correlationId == null) {
             return null;
@@ -53,7 +65,7 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
             if (Character.isISOControl(ch)) {
                 return null;
             }
-            if (!(Character.isLetterOrDigit(ch) || ch == '-' || ch == '_' || ch == '.' )) {
+            if (!(Character.isLetterOrDigit(ch) || ch == '-' || ch == '_' || ch == '.')) {
                 return null;
             }
         }
