@@ -15,4 +15,6 @@ storage/
 *.iml
 Thumbs.db
 
-generated_docs/*
+# Generated implementation artifacts (tracked per project instructions)
+!generated_docs/
+!generated_docs/*.md

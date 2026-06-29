@@ -31,6 +31,34 @@ A production-grade sample Todo application with:
 	- Repository
 	- Storage utility
 
+## API Error Envelope + Correlation ID (EPMCDMETST-51892)
+
+The application standardizes API error responses using a JSON envelope and a correlation id.
+
+### Correlation ID
+
+- Request header: `X-Correlation-ID`
+- If the header is provided, it is used as-is.
+- If missing/blank, the server generates a UUID.
+- The correlation id is available during request processing via SLF4J MDC key `correlationId`.
+
+### Error Envelope
+
+All handled errors return:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "details": [
+      { "field": "name", "message": "must not be blank" }
+    ],
+    "correlationId": "<uuid>"
+  }
+}
+```
+
 ## Project Structure
 
 ```
@@ -38,12 +66,15 @@ src/main/java/com/capstone/todo
 |- config/            # App, Jackson, Security configuration
 |- domain/            # Core domain models
 |- dto/               # Form DTOs and validation
+|- exception/         # Domain-specific exceptions mapped to API errors
 |- repository/        # Repository abstractions
 |- repository/impl/   # File-system repository implementations
 |- service/           # Service abstractions
 |- service/impl/      # Business logic implementations
 |- storage/           # File read/write utility with file locks
 |- web/               # MVC controllers
+|- web/api            # API error envelope + global exception handler
+|- web/filter         # Servlet filters (CorrelationIdFilter)
 
 src/main/resources
 |- templates/         # Thymeleaf views
@@ -104,7 +135,7 @@ mvn spring-boot:run
 
 3. Open:
 
-`http://localhost:8080`
+`http://localhost:8090`
 
 ### Troubleshooting (Windows)
 

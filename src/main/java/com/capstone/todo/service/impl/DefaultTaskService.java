@@ -3,6 +3,8 @@ package com.capstone.todo.service.impl;
 import com.capstone.todo.domain.TaskStatus;
 import com.capstone.todo.domain.TodoTask;
 import com.capstone.todo.dto.TaskForm;
+import com.capstone.todo.exception.TaskNotFoundException;
+import com.capstone.todo.exception.ValidationException;
 import com.capstone.todo.repository.TaskRepository;
 import com.capstone.todo.service.TaskService;
 import org.springframework.stereotype.Service;
@@ -47,7 +49,7 @@ public class DefaultTaskService implements TaskService {
     @Override
     public void markCompleted(String username, String taskId) {
         TodoTask task = taskRepository.findById(normalizeUsername(username), taskId)
-            .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+            .orElseThrow(() -> new TaskNotFoundException("Task not found"));
 
         task.setStatus(TaskStatus.COMPLETED);
         taskRepository.update(task);
@@ -59,7 +61,7 @@ public class DefaultTaskService implements TaskService {
 
     private void validateTaskDates(TaskForm taskForm) {
         if (taskForm.getPlannedFinishDate().isBefore(taskForm.getTaskDate())) {
-            throw new IllegalArgumentException("Planned finish date cannot be before task date");
+            throw new ValidationException("Planned finish date cannot be before task date");
         }
     }
 }
