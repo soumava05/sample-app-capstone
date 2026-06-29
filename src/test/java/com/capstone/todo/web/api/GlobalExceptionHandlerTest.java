@@ -46,6 +46,9 @@ class GlobalExceptionHandlerTest {
 
                 JsonNode root = objectMapper.readTree(result.getResponse().getContentAsString());
                 String bodyCorrelationId = root.path("error").path("correlationId").asText();
+
+                UUID.fromString(bodyCorrelationId);
+
                 if (!headerCorrelationId.equals(bodyCorrelationId)) {
                     throw new AssertionError("Body correlationId does not match response header correlation id");
                 }
