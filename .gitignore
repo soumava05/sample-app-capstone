@@ -1,23 +1,6 @@
-# Local secrets
-.secrets/**
-!.secrets/
-!.secrets/mcp/
-!.secrets/mcp/.env.example
-
-# Build artifacts
 target/
-
-# Runtime storage for local file persistence
-storage/
-
-# Local runtime logs
-server_startup.log
-
-# IDE and OS files
 .idea/
 *.iml
-Thumbs.db
 
-# Generated implementation artifacts (tracked per project instructions)
-!generated_docs/
-!generated_docs/*.md
+# Reports / artifacts
+EPMCDMETST-51892/automation_run_*.html
