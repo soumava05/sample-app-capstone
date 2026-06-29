@@ -73,6 +73,33 @@ class GlobalExceptionHandlerTest {
             .andExpect(jsonPath("$.error.correlationId").value("client-uuid"));
     }
 
+    @WithMockUser
+    @org.testng.annotations.Test
+    void validationError_withInvalidHeader_returns400_andGeneratedCorrelationId() throws Exception {
+        mockMvc.perform(post("/api/test/validate")
+                .header(CorrelationIdFilter.CORRELATION_ID_HEADER, " ")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(header().exists(CorrelationIdFilter.CORRELATION_ID_HEADER))
+            .andExpect(result -> {
+                String headerCorrelationId = result.getResponse().getHeader(CorrelationIdFilter.CORRELATION_ID_HEADER);
+                Assert.assertNotNull(headerCorrelationId, "X-Correlation-ID response header must be present");
+
+                // Should be generated UUID when client header is invalid.
+                UUID.fromString(headerCorrelationId);
+
+                JsonNode root = objectMapper.readTree(result.getResponse().getContentAsString());
+                String bodyCorrelationId = root.path("error").path("correlationId").asText();
+                Assert.assertNotNull(bodyCorrelationId, "Body correlationId must be present");
+
+                UUID.fromString(bodyCorrelationId);
+
+                Assert.assertEquals(bodyCorrelationId, headerCorrelationId,
+                    "Body correlationId does not match response header correlation id");
+            });
+    }
+
     @RestController
     @RequestMapping("/api/test")
     static class ValidationController {
