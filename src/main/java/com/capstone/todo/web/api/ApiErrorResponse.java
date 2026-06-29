@@ -22,7 +22,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiErrorResponse(ApiError error) {
 
-    public record ApiError(String code, String message, List<Object> details, String correlationId) {
+    public record ApiError(String code, String message, List<?> details, String correlationId) {
         public ApiError {
             if (details == null) {
                 details = new ArrayList<>();
@@ -30,7 +30,7 @@ public record ApiErrorResponse(ApiError error) {
         }
     }
 
-    public static ApiErrorResponse of(String code, String message, List<Object> details, String correlationId) {
+    public static ApiErrorResponse of(String code, String message, List<?> details, String correlationId) {
         return new ApiErrorResponse(new ApiError(code, message, details, correlationId));
     }
 

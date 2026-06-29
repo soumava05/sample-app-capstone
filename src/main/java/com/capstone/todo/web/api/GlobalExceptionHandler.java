@@ -24,9 +24,11 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    private static final String CORRELATION_ID_MDC_KEY = "correlationId";
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException exception) {
-        List<Object> details = new ArrayList<>();
+        List<Map<String, Object>> details = new ArrayList<>();
         for (FieldError fieldError : exception.getBindingResult().getFieldErrors()) {
             Map<String, Object> detail = new LinkedHashMap<>();
             detail.put("field", fieldError.getField());
@@ -71,6 +73,7 @@ public class GlobalExceptionHandler {
     }
 
     private String correlationId() {
-        return MDC.get("correlationId");
+        String correlationId = MDC.get(CORRELATION_ID_MDC_KEY);
+        return correlationId == null || correlationId.trim().isEmpty() ? "unknown" : correlationId;
     }
 }
