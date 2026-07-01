@@ -7,8 +7,8 @@
 # Build artifacts
 target/
 
-# Runtime storage for local file persistence
-storage/
+# Runtime storage for local file persistence (repo-root only, not source packages)
+/storage/
 
 # IDE and OS files
 .idea/

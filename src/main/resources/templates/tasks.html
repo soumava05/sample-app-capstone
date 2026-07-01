@@ -54,8 +54,29 @@
     <section class="card">
         <h2>My Task List</h2>
 
+        <div class="filter-bar">
+            <nav class="filter-group" aria-label="Task status filter">
+                <a class="filter-btn"
+                   th:classappend="${filter == 'ALL'} ? 'active'"
+                   th:href="@{/tasks(filter='ALL', keyword=${keyword})}">All</a>
+                <a class="filter-btn"
+                   th:classappend="${filter == 'OPEN'} ? 'active'"
+                   th:href="@{/tasks(filter='OPEN', keyword=${keyword})}">Open</a>
+                <a class="filter-btn"
+                   th:classappend="${filter == 'COMPLETED'} ? 'active'"
+                   th:href="@{/tasks(filter='COMPLETED', keyword=${keyword})}">Completed</a>
+            </nav>
+
+            <form class="search-form" th:action="@{/tasks}" method="get">
+                <input type="hidden" name="filter" th:value="${filter}">
+                <input class="search-input" type="text" name="keyword"
+                       th:value="${keyword}" placeholder="Search title or description">
+                <button type="submit" class="btn">Search</button>
+            </form>
+        </div>
+
         <div th:if="${#lists.isEmpty(tasks)}" class="empty-state">
-            No tasks yet. Add your first task above.
+            No tasks match the current filter or search.
         </div>
 
         <div class="task-list" th:if="${!#lists.isEmpty(tasks)}">
