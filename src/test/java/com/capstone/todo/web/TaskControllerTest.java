@@ -1,5 +1,6 @@
 package com.capstone.todo.web;
 
+import com.capstone.todo.domain.TaskStatus;
 import com.capstone.todo.dto.TaskForm;
 import com.capstone.todo.service.TaskService;
 import org.mockito.Mockito;
@@ -13,6 +14,8 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,18 +41,63 @@ public class TaskControllerTest {
     }
 
     @Test
-    public void taskDashboardShouldPopulateModelAndReturnTasksView() {
+    public void taskDashboardShouldPopulateModelAndReturnTasksViewWithDefaults() {
         org.springframework.security.core.Authentication authentication = Mockito.mock(org.springframework.security.core.Authentication.class);
         when(authentication.getName()).thenReturn("john");
-        when(taskService.getUserTasks("john")).thenReturn(List.of());
+        when(taskService.getFilteredTasks(eq("john"), isNull(), eq(""))).thenReturn(List.of());
         Model model = new ConcurrentModel();
 
-        String view = taskController.taskDashboard(authentication, model);
+        String view = taskController.taskDashboard(authentication, "ALL", null, model);
 
         assertEquals(view, "tasks");
         assertNotNull(model.getAttribute("tasks"));
         assertNotNull(model.getAttribute("taskForm"));
         assertEquals(model.getAttribute("username"), "john");
+        assertEquals(model.getAttribute("filter"), "ALL");
+        assertEquals(model.getAttribute("keyword"), "");
+    }
+
+    @Test
+    public void taskDashboardShouldPassOpenFilterToService() {
+        org.springframework.security.core.Authentication authentication = Mockito.mock(org.springframework.security.core.Authentication.class);
+        when(authentication.getName()).thenReturn("john");
+        when(taskService.getFilteredTasks(eq("john"), eq(TaskStatus.OPEN), eq("meeting"))).thenReturn(List.of());
+        Model model = new ConcurrentModel();
+
+        String view = taskController.taskDashboard(authentication, "OPEN", "  meeting  ", model);
+
+        assertEquals(view, "tasks");
+        assertEquals(model.getAttribute("filter"), "OPEN");
+        assertEquals(model.getAttribute("keyword"), "meeting");
+        verify(taskService).getFilteredTasks("john", TaskStatus.OPEN, "meeting");
+    }
+
+    @Test
+    public void taskDashboardShouldPassCompletedFilterToService() {
+        org.springframework.security.core.Authentication authentication = Mockito.mock(org.springframework.security.core.Authentication.class);
+        when(authentication.getName()).thenReturn("john");
+        when(taskService.getFilteredTasks(eq("john"), eq(TaskStatus.COMPLETED), eq(""))).thenReturn(List.of());
+        Model model = new ConcurrentModel();
+
+        String view = taskController.taskDashboard(authentication, "completed", null, model);
+
+        assertEquals(view, "tasks");
+        assertEquals(model.getAttribute("filter"), "COMPLETED");
+        verify(taskService).getFilteredTasks("john", TaskStatus.COMPLETED, "");
+    }
+
+    @Test
+    public void taskDashboardShouldDefaultToAllForInvalidFilter() {
+        org.springframework.security.core.Authentication authentication = Mockito.mock(org.springframework.security.core.Authentication.class);
+        when(authentication.getName()).thenReturn("john");
+        when(taskService.getFilteredTasks(eq("john"), isNull(), eq(""))).thenReturn(List.of());
+        Model model = new ConcurrentModel();
+
+        String view = taskController.taskDashboard(authentication, "UNKNOWN", null, model);
+
+        assertEquals(view, "tasks");
+        assertEquals(model.getAttribute("filter"), "ALL");
+        verify(taskService).getFilteredTasks("john", null, "");
     }
 
     @Test

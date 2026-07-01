@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.expectThrows;
 
 public class DefaultTaskServiceTest {
@@ -127,6 +128,124 @@ public class DefaultTaskServiceTest {
 
         assertEquals(tasks.size(), 1);
         assertEquals(tasks.get(0).getId(), "task-1");
+    }
+
+    @Test
+    public void getFilteredTasksShouldNormalizeUsernameBeforeLookup() {
+        when(taskRepository.findByUsername("alice")).thenReturn(List.of());
+
+        taskService.getFilteredTasks("  ALICE ", null, null);
+
+        verify(taskRepository).findByUsername("alice");
+    }
+
+    @Test
+    public void getFilteredTasksWithNullFilterAndBlankKeywordShouldReturnAllTasks() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> tasks = taskService.getFilteredTasks("alice", null, "   ");
+
+        assertEquals(tasks.size(), 3);
+    }
+
+    @Test
+    public void getFilteredTasksShouldReturnOnlyOpenTasksWhenFilterIsOpen() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> tasks = taskService.getFilteredTasks("alice", TaskStatus.OPEN, null);
+
+        assertEquals(tasks.size(), 2);
+        assertTrue(tasks.stream().allMatch(task -> task.getStatus() == TaskStatus.OPEN));
+    }
+
+    @Test
+    public void getFilteredTasksShouldReturnOnlyCompletedTasksWhenFilterIsCompleted() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> tasks = taskService.getFilteredTasks("alice", TaskStatus.COMPLETED, null);
+
+        assertEquals(tasks.size(), 1);
+        assertEquals(tasks.get(0).getStatus(), TaskStatus.COMPLETED);
+    }
+
+    @Test
+    public void getFilteredTasksShouldMatchKeywordCaseInsensitivelyInTitle() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> tasks = taskService.getFilteredTasks("alice", null, "MEETING");
+
+        assertEquals(tasks.size(), 1);
+        assertEquals(tasks.get(0).getTitle(), "Schedule meeting");
+    }
+
+    @Test
+    public void getFilteredTasksShouldMatchKeywordCaseInsensitivelyInDescription() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> tasks = taskService.getFilteredTasks("alice", null, "checklist");
+
+        assertEquals(tasks.size(), 1);
+        assertEquals(tasks.get(0).getTitle(), "Prepare release");
+    }
+
+    @Test
+    public void getFilteredTasksShouldCombineFilterAndKeyword() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> tasks = taskService.getFilteredTasks("alice", TaskStatus.OPEN, "report");
+
+        assertEquals(tasks.size(), 1);
+        assertEquals(tasks.get(0).getTitle(), "Write report");
+        assertEquals(tasks.get(0).getStatus(), TaskStatus.OPEN);
+    }
+
+    @Test
+    public void getFilteredTasksShouldHandleNullDescriptionWithoutError() {
+        TodoTask taskWithNullDescription = new TodoTask(
+            "task-null",
+            "alice",
+            "Some title",
+            null,
+            LocalDate.of(2026, 6, 20),
+            LocalDate.of(2026, 6, 21),
+            TaskStatus.OPEN,
+            LocalDateTime.now()
+        );
+        when(taskRepository.findByUsername("alice")).thenReturn(List.of(taskWithNullDescription));
+
+        List<TodoTask> tasks = taskService.getFilteredTasks("alice", null, "title");
+
+        assertEquals(tasks.size(), 1);
+    }
+
+    @Test
+    public void getFilteredTasksShouldReturnEmptyWhenNoKeywordMatch() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> tasks = taskService.getFilteredTasks("alice", null, "nonexistent-keyword");
+
+        assertEquals(tasks.size(), 0);
+    }
+
+    private List<TodoTask> sampleTasks() {
+        return List.of(
+            task("task-1", "Schedule meeting", "Discuss roadmap", TaskStatus.OPEN),
+            task("task-2", "Write report", "Quarterly report draft", TaskStatus.OPEN),
+            task("task-3", "Prepare release", "Include deployment checklist", TaskStatus.COMPLETED)
+        );
+    }
+
+    private TodoTask task(String id, String title, String description, TaskStatus status) {
+        return new TodoTask(
+            id,
+            "alice",
+            title,
+            description,
+            LocalDate.of(2026, 6, 20),
+            LocalDate.of(2026, 6, 21),
+            status,
+            LocalDateTime.now()
+        );
     }
 
     private TaskForm taskForm(String title, String description, LocalDate taskDate, LocalDate plannedFinishDate) {
