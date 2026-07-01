@@ -1,0 +1,12 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.2)
+
+2026-07-01T21:59:47.110+05:30  INFO 21624 --- [todo-app] [           main] com.capstone.todo.TodoApplication        : Starting TodoApplication v1.0.0 using Java 21.0.10 with PID 21624 (C:\Users\SoumavaSamanta\sample-app-capstone\target\todo-app-1.0.0.jar started by SoumavaSamanta in C:\Users\SoumavaSamanta\sample-app-capstone)
+2026-07-01T21:59:47.114+05:30  INFO 21624 --- [todo-app] [           main] com.capstone.todo.TodoApplication        : No active profile set, falling back to 1 default profile: "default"

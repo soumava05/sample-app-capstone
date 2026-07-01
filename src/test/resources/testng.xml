@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="EPMCDMETST-52763 Test Suite" verbose="1" parallel="none">
+
+    <test name="Task Filter and Search Tests">
+        <groups>
+            <run>
+                <include name="smoke"/>
+                <include name="functional"/>
+                <include name="filter"/>
+                <include name="search"/>
+                <include name="combined"/>
+                <include name="persistence"/>
+                <include name="edgecase"/>
+                <include name="validation"/>
+                <include name="negative"/>
+                <include name="ui"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="com.capstone.todo.automation.tests.TaskFilterSearchTest"/>
+        </classes>
+    </test>
+
+</suite>
