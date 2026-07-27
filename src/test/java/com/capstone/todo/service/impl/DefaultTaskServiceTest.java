@@ -129,6 +129,85 @@ public class DefaultTaskServiceTest {
         assertEquals(tasks.get(0).getId(), "task-1");
     }
 
+    @Test
+    public void getUserTasksShouldReturnAllTasksWhenStatusIsAllAndSearchBlank() {
+        List<TodoTask> repositoryTasks = List.of(
+            todoTask("task-1", "alice", "Prepare report", "Monthly summary", TaskStatus.OPEN),
+            todoTask("task-2", "alice", "Review notes", "Finalize release", TaskStatus.COMPLETED)
+        );
+        when(taskRepository.findByUsername("alice")).thenReturn(repositoryTasks);
+
+        List<TodoTask> tasks = taskService.getUserTasks("Alice", "ALL", "   ");
+
+        assertEquals(tasks, repositoryTasks);
+    }
+
+    @Test
+    public void getUserTasksShouldFilterByStatus() {
+        when(taskRepository.findByUsername("alice")).thenReturn(List.of(
+            todoTask("task-1", "alice", "Prepare report", "Monthly summary", TaskStatus.OPEN),
+            todoTask("task-2", "alice", "Review notes", "Finalize release", TaskStatus.COMPLETED)
+        ));
+
+        List<TodoTask> tasks = taskService.getUserTasks("Alice", "completed", null);
+
+        assertEquals(tasks.size(), 1);
+        assertEquals(tasks.get(0).getId(), "task-2");
+    }
+
+    @Test
+    public void getUserTasksShouldFilterBySearchAcrossTitleAndDescription() {
+        when(taskRepository.findByUsername("alice")).thenReturn(List.of(
+            todoTask("task-1", "alice", "Prepare report", "Monthly summary", TaskStatus.OPEN),
+            todoTask("task-2", "alice", "Review notes", "Finalize release", TaskStatus.COMPLETED)
+        ));
+
+        List<TodoTask> tasks = taskService.getUserTasks("Alice", "ALL", "  RELEASE ");
+
+        assertEquals(tasks.size(), 1);
+        assertEquals(tasks.get(0).getId(), "task-2");
+    }
+
+    @Test
+    public void getUserTasksShouldCombineStatusAndSearchFilters() {
+        when(taskRepository.findByUsername("alice")).thenReturn(List.of(
+            todoTask("task-1", "alice", "Release report", "Monthly summary", TaskStatus.OPEN),
+            todoTask("task-2", "alice", "Release notes", "Finalize release", TaskStatus.COMPLETED),
+            todoTask("task-3", "alice", "Prepare backlog", "Release planning", TaskStatus.COMPLETED)
+        ));
+
+        List<TodoTask> tasks = taskService.getUserTasks("Alice", "COMPLETED", "notes");
+
+        assertEquals(tasks.size(), 1);
+        assertEquals(tasks.get(0).getId(), "task-2");
+    }
+
+    @Test
+    public void getUserTasksShouldFallbackToAllForInvalidStatus() {
+        List<TodoTask> repositoryTasks = List.of(
+            todoTask("task-1", "alice", "Prepare report", "Monthly summary", TaskStatus.OPEN),
+            todoTask("task-2", "alice", "Review notes", "Finalize release", TaskStatus.COMPLETED)
+        );
+        when(taskRepository.findByUsername("alice")).thenReturn(repositoryTasks);
+
+        List<TodoTask> tasks = taskService.getUserTasks("Alice", "INVALID", null);
+
+        assertEquals(tasks, repositoryTasks);
+    }
+
+    private TodoTask todoTask(String id, String username, String title, String description, TaskStatus status) {
+        return new TodoTask(
+            id,
+            username,
+            title,
+            description,
+            LocalDate.of(2026, 6, 20),
+            LocalDate.of(2026, 6, 21),
+            status,
+            LocalDateTime.of(2026, 6, 20, 10, 0)
+        );
+    }
+
     private TaskForm taskForm(String title, String description, LocalDate taskDate, LocalDate plannedFinishDate) {
         TaskForm taskForm = new TaskForm();
         taskForm.setTitle(title);
