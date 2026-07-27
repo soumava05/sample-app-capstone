@@ -70,7 +70,8 @@ label {
 }
 
 input,
-textarea {
+textarea,
+select {
     width: 100%;
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -79,7 +80,8 @@ textarea {
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
     outline: 2px solid rgba(29, 78, 216, 0.24);
     border-color: var(--primary);
 }
@@ -93,6 +95,10 @@ textarea:focus {
     color: #fff;
     cursor: pointer;
     font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn:hover {
@@ -107,6 +113,17 @@ textarea:focus {
 .btn.success {
     background: var(--success);
     margin-top: 0;
+}
+
+.btn.link-btn {
+    margin-top: 0;
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+}
+
+.btn.link-btn:hover {
+    background: rgba(29, 78, 216, 0.08);
 }
 
 .footer-link {
@@ -151,6 +168,41 @@ textarea:focus {
 .dashboard-header {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-form {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.filter-field {
+    min-width: 150px;
+}
+
+.filter-field label {
+    display: block;
+    margin-top: 0;
+    margin-bottom: 0.35rem;
+}
+
+.search-field {
+    min-width: min(320px, 100%);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 0.5rem;
     align-items: center;
 }
 
@@ -213,9 +265,19 @@ textarea:focus {
 
 @media (max-width: 720px) {
     .dashboard-header,
-    .task-item {
+    .task-item,
+    .section-header {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .filter-form,
+    .filter-actions {
+        width: 100%;
+    }
+
+    .filter-actions .btn {
+        flex: 1;
     }
 
     .date-grid {

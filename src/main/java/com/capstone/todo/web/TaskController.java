@@ -11,9 +11,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 public class TaskController {
+
+    private static final String DEFAULT_STATUS = "ALL";
 
     private final TaskService taskService;
 
@@ -27,11 +30,16 @@ public class TaskController {
     }
 
     @GetMapping("/tasks")
-    public String taskDashboard(Authentication authentication, Model model) {
+    public String taskDashboard(Authentication authentication,
+                                Model model,
+                                @RequestParam(defaultValue = DEFAULT_STATUS) String status,
+                                @RequestParam(required = false) String search) {
         String username = authentication.getName();
-        model.addAttribute("tasks", taskService.getUserTasks(username));
+        model.addAttribute("tasks", taskService.getUserTasks(username, status, search));
         model.addAttribute("taskForm", new TaskForm());
         model.addAttribute("username", username);
+        model.addAttribute("selectedStatus", status);
+        model.addAttribute("searchTerm", search == null ? "" : search);
         return "tasks";
     }
 
@@ -43,8 +51,10 @@ public class TaskController {
         String username = authentication.getName();
 
         if (bindingResult.hasErrors()) {
-            model.addAttribute("tasks", taskService.getUserTasks(username));
+            model.addAttribute("tasks", taskService.getUserTasks(username, DEFAULT_STATUS, null));
             model.addAttribute("username", username);
+            model.addAttribute("selectedStatus", DEFAULT_STATUS);
+            model.addAttribute("searchTerm", "");
             return "tasks";
         }
 
@@ -52,8 +62,10 @@ public class TaskController {
             taskService.createTask(username, taskForm);
             return "redirect:/tasks";
         } catch (IllegalArgumentException exception) {
-            model.addAttribute("tasks", taskService.getUserTasks(username));
+            model.addAttribute("tasks", taskService.getUserTasks(username, DEFAULT_STATUS, null));
             model.addAttribute("username", username);
+            model.addAttribute("selectedStatus", DEFAULT_STATUS);
+            model.addAttribute("searchTerm", "");
             bindingResult.reject("task.error", exception.getMessage());
             return "tasks";
         }

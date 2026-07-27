@@ -11,5 +11,7 @@ public interface TaskService {
 
     List<TodoTask> getUserTasks(String username);
 
+    List<TodoTask> getUserTasks(String username, String status, String search);
+
     void markCompleted(String username, String taskId);
 }
