@@ -7,6 +7,7 @@ import com.capstone.todo.repository.TaskRepository;
 import com.capstone.todo.service.TaskService;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
@@ -14,6 +15,8 @@ import java.util.UUID;
 
 @Service
 public class DefaultTaskService implements TaskService {
+
+    private static final String ALL_STATUS = "ALL";
 
     private final TaskRepository taskRepository;
 
@@ -41,7 +44,18 @@ public class DefaultTaskService implements TaskService {
 
     @Override
     public List<TodoTask> getUserTasks(String username) {
-        return taskRepository.findByUsername(normalizeUsername(username));
+        return getUserTasks(username, null, null, null);
+    }
+
+    @Override
+    public List<TodoTask> getUserTasks(String username, String status, LocalDate fromDate, LocalDate toDate) {
+        validateFilterRange(fromDate, toDate);
+
+        return taskRepository.findByUsername(normalizeUsername(username)).stream()
+            .filter(task -> matchesStatus(task, status))
+            .filter(task -> matchesFromDate(task, fromDate))
+            .filter(task -> matchesToDate(task, toDate))
+            .toList();
     }
 
     @Override
@@ -53,6 +67,22 @@ public class DefaultTaskService implements TaskService {
         taskRepository.update(task);
     }
 
+    private boolean matchesStatus(TodoTask task, String status) {
+        if (status == null || status.isBlank() || ALL_STATUS.equalsIgnoreCase(status)) {
+            return true;
+        }
+
+        return task.getStatus().name().equalsIgnoreCase(status.trim());
+    }
+
+    private boolean matchesFromDate(TodoTask task, LocalDate fromDate) {
+        return fromDate == null || !task.getTaskDate().isBefore(fromDate);
+    }
+
+    private boolean matchesToDate(TodoTask task, LocalDate toDate) {
+        return toDate == null || !task.getTaskDate().isAfter(toDate);
+    }
+
     private String normalizeUsername(String username) {
         return username.trim().toLowerCase(Locale.ROOT);
     }
@@ -60,6 +90,12 @@ public class DefaultTaskService implements TaskService {
     private void validateTaskDates(TaskForm taskForm) {
         if (taskForm.getPlannedFinishDate().isBefore(taskForm.getTaskDate())) {
             throw new IllegalArgumentException("Planned finish date cannot be before task date");
+        }
+    }
+
+    private void validateFilterRange(LocalDate fromDate, LocalDate toDate) {
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            throw new IllegalArgumentException("From date cannot be after to date");
         }
     }
 }

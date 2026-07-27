@@ -52,10 +52,37 @@
     </section>
 
     <section class="card">
-        <h2>My Task List</h2>
+        <div class="section-header">
+            <h2>My Task List</h2>
+            <a class="btn secondary" th:href="@{/tasks}">Reset</a>
+        </div>
+
+        <div th:if="${filterError}" class="alert error" th:text="${filterError}"></div>
+
+        <form th:action="@{/tasks}" method="get" class="form-grid">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="ALL" th:selected="${selectedStatus == 'ALL'}">All</option>
+                <option value="OPEN" th:selected="${selectedStatus == 'OPEN'}">Open</option>
+                <option value="COMPLETED" th:selected="${selectedStatus == 'COMPLETED'}">Completed</option>
+            </select>
+
+            <div class="date-grid">
+                <div>
+                    <label for="fromDate">From Date</label>
+                    <input id="fromDate" type="date" name="fromDate" th:value="${fromDate}">
+                </div>
+                <div>
+                    <label for="toDate">To Date</label>
+                    <input id="toDate" type="date" name="toDate" th:value="${toDate}">
+                </div>
+            </div>
+
+            <button type="submit" class="btn">Apply Filters</button>
+        </form>
 
         <div th:if="${#lists.isEmpty(tasks)}" class="empty-state">
-            No tasks yet. Add your first task above.
+            No tasks match the selected filters.
         </div>
 
         <div class="task-list" th:if="${!#lists.isEmpty(tasks)}">

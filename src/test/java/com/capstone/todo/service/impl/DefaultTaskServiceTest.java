@@ -129,6 +129,142 @@ public class DefaultTaskServiceTest {
         assertEquals(tasks.get(0).getId(), "task-1");
     }
 
+    @Test
+    public void getUserTasksShouldReturnAllTasksWhenNoFiltersSupplied() {
+        List<TodoTask> tasks = sampleTasks();
+        when(taskRepository.findByUsername("alice")).thenReturn(tasks);
+
+        List<TodoTask> filteredTasks = taskService.getUserTasks("alice", null, null, null);
+
+        assertEquals(filteredTasks.size(), 3);
+    }
+
+    @Test
+    public void getUserTasksShouldFilterByOpenStatus() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> filteredTasks = taskService.getUserTasks("alice", "OPEN", null, null);
+
+        assertEquals(filteredTasks.size(), 2);
+        assertEquals(filteredTasks.get(0).getStatus(), TaskStatus.OPEN);
+        assertEquals(filteredTasks.get(1).getStatus(), TaskStatus.OPEN);
+    }
+
+    @Test
+    public void getUserTasksShouldFilterByCompletedStatus() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> filteredTasks = taskService.getUserTasks("alice", "COMPLETED", null, null);
+
+        assertEquals(filteredTasks.size(), 1);
+        assertEquals(filteredTasks.get(0).getStatus(), TaskStatus.COMPLETED);
+    }
+
+    @Test
+    public void getUserTasksShouldIgnoreAllStatusFilter() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> filteredTasks = taskService.getUserTasks("alice", "ALL", null, null);
+
+        assertEquals(filteredTasks.size(), 3);
+    }
+
+    @Test
+    public void getUserTasksShouldFilterByFromDateInclusively() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> filteredTasks = taskService.getUserTasks("alice", null, LocalDate.of(2026, 6, 15), null);
+
+        assertEquals(filteredTasks.size(), 2);
+        assertEquals(filteredTasks.get(0).getId(), "task-2");
+        assertEquals(filteredTasks.get(1).getId(), "task-3");
+    }
+
+    @Test
+    public void getUserTasksShouldFilterByToDateInclusively() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> filteredTasks = taskService.getUserTasks("alice", null, null, LocalDate.of(2026, 6, 15));
+
+        assertEquals(filteredTasks.size(), 2);
+        assertEquals(filteredTasks.get(0).getId(), "task-1");
+        assertEquals(filteredTasks.get(1).getId(), "task-2");
+    }
+
+    @Test
+    public void getUserTasksShouldFilterByInclusiveDateRange() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> filteredTasks = taskService.getUserTasks(
+            "alice",
+            null,
+            LocalDate.of(2026, 6, 15),
+            LocalDate.of(2026, 6, 20)
+        );
+
+        assertEquals(filteredTasks.size(), 2);
+        assertEquals(filteredTasks.get(0).getId(), "task-2");
+        assertEquals(filteredTasks.get(1).getId(), "task-3");
+    }
+
+    @Test
+    public void getUserTasksShouldFilterByCombinedStatusAndDateRange() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> filteredTasks = taskService.getUserTasks(
+            "alice",
+            "OPEN",
+            LocalDate.of(2026, 6, 15),
+            LocalDate.of(2026, 6, 30)
+        );
+
+        assertEquals(filteredTasks.size(), 1);
+        assertEquals(filteredTasks.get(0).getId(), "task-3");
+    }
+
+    @Test
+    public void getUserTasksShouldValidateInvalidDateRange() {
+        IllegalArgumentException exception = expectThrows(IllegalArgumentException.class,
+            () -> taskService.getUserTasks(
+                "alice",
+                "OPEN",
+                LocalDate.of(2026, 6, 30),
+                LocalDate.of(2026, 6, 1)
+            ));
+
+        assertEquals(exception.getMessage(), "From date cannot be after to date");
+    }
+
+    @Test
+    public void getUserTasksShouldNormalizeUsernameWhenFiltering() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        List<TodoTask> filteredTasks = taskService.getUserTasks("  ALICE ", "OPEN", null, null);
+
+        assertEquals(filteredTasks.size(), 2);
+    }
+
+    private List<TodoTask> sampleTasks() {
+        return List.of(
+            todoTask("task-1", LocalDate.of(2026, 6, 10), TaskStatus.OPEN),
+            todoTask("task-2", LocalDate.of(2026, 6, 15), TaskStatus.COMPLETED),
+            todoTask("task-3", LocalDate.of(2026, 6, 20), TaskStatus.OPEN)
+        );
+    }
+
+    private TodoTask todoTask(String id, LocalDate taskDate, TaskStatus status) {
+        return new TodoTask(
+            id,
+            "alice",
+            "Task " + id,
+            "Desc",
+            taskDate,
+            taskDate.plusDays(1),
+            status,
+            LocalDateTime.now()
+        );
+    }
+
     private TaskForm taskForm(String title, String description, LocalDate taskDate, LocalDate plannedFinishDate) {
         TaskForm taskForm = new TaskForm();
         taskForm.setTitle(title);

@@ -3,12 +3,14 @@ package com.capstone.todo.web;
 import com.capstone.todo.dto.TaskForm;
 import com.capstone.todo.service.TaskService;
 import org.mockito.Mockito;
+import org.springframework.security.core.Authentication;
 import org.springframework.ui.ConcurrentModel;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -38,23 +40,70 @@ public class TaskControllerTest {
     }
 
     @Test
-    public void taskDashboardShouldPopulateModelAndReturnTasksView() {
-        org.springframework.security.core.Authentication authentication = Mockito.mock(org.springframework.security.core.Authentication.class);
+    public void taskDashboardShouldPopulateModelWithFiltersAndReturnTasksView() {
+        Authentication authentication = Mockito.mock(Authentication.class);
         when(authentication.getName()).thenReturn("john");
-        when(taskService.getUserTasks("john")).thenReturn(List.of());
+        when(taskService.getUserTasks("john", "OPEN", LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30)))
+            .thenReturn(List.of());
         Model model = new ConcurrentModel();
 
-        String view = taskController.taskDashboard(authentication, model);
+        String view = taskController.taskDashboard(
+            authentication,
+            model,
+            "OPEN",
+            LocalDate.of(2026, 6, 1),
+            LocalDate.of(2026, 6, 30)
+        );
 
         assertEquals(view, "tasks");
         assertNotNull(model.getAttribute("tasks"));
         assertNotNull(model.getAttribute("taskForm"));
         assertEquals(model.getAttribute("username"), "john");
+        assertEquals(model.getAttribute("selectedStatus"), "OPEN");
+        assertEquals(model.getAttribute("fromDate"), LocalDate.of(2026, 6, 1));
+        assertEquals(model.getAttribute("toDate"), LocalDate.of(2026, 6, 30));
+    }
+
+    @Test
+    public void taskDashboardShouldDefaultStatusToAllWhenBlank() {
+        Authentication authentication = Mockito.mock(Authentication.class);
+        when(authentication.getName()).thenReturn("john");
+        when(taskService.getUserTasks("john", "ALL", null, null)).thenReturn(List.of());
+        Model model = new ConcurrentModel();
+
+        String view = taskController.taskDashboard(authentication, model, "   ", null, null);
+
+        verify(taskService).getUserTasks("john", "ALL", null, null);
+        assertEquals(view, "tasks");
+        assertEquals(model.getAttribute("selectedStatus"), "ALL");
+    }
+
+    @Test
+    public void taskDashboardShouldShowFilterErrorAndFallbackToAllTasksWhenRangeInvalid() {
+        Authentication authentication = Mockito.mock(Authentication.class);
+        when(authentication.getName()).thenReturn("john");
+        doThrow(new IllegalArgumentException("From date cannot be after to date"))
+            .when(taskService)
+            .getUserTasks("john", "OPEN", LocalDate.of(2026, 6, 30), LocalDate.of(2026, 6, 1));
+        when(taskService.getUserTasks("john")).thenReturn(List.of());
+        Model model = new ConcurrentModel();
+
+        String view = taskController.taskDashboard(
+            authentication,
+            model,
+            "OPEN",
+            LocalDate.of(2026, 6, 30),
+            LocalDate.of(2026, 6, 1)
+        );
+
+        assertEquals(view, "tasks");
+        assertEquals(model.getAttribute("filterError"), "From date cannot be after to date");
+        assertEquals(model.getAttribute("selectedStatus"), "OPEN");
     }
 
     @Test
     public void createTaskShouldReturnTasksViewWhenValidationFails() {
-        org.springframework.security.core.Authentication authentication = Mockito.mock(org.springframework.security.core.Authentication.class);
+        Authentication authentication = Mockito.mock(Authentication.class);
         when(authentication.getName()).thenReturn("john");
         when(taskService.getUserTasks("john")).thenReturn(List.of());
 
@@ -65,11 +114,12 @@ public class TaskControllerTest {
         String view = taskController.createTask(authentication, new TaskForm(), bindingResult, model);
 
         assertEquals(view, "tasks");
+        assertEquals(model.getAttribute("selectedStatus"), "ALL");
     }
 
     @Test
     public void createTaskShouldRedirectWhenSuccessful() {
-        org.springframework.security.core.Authentication authentication = Mockito.mock(org.springframework.security.core.Authentication.class);
+        Authentication authentication = Mockito.mock(Authentication.class);
         when(authentication.getName()).thenReturn("john");
 
         BindingResult bindingResult = Mockito.mock(BindingResult.class);
@@ -83,7 +133,7 @@ public class TaskControllerTest {
 
     @Test
     public void createTaskShouldRejectAndReturnTasksViewWhenServiceThrows() {
-        org.springframework.security.core.Authentication authentication = Mockito.mock(org.springframework.security.core.Authentication.class);
+        Authentication authentication = Mockito.mock(Authentication.class);
         when(authentication.getName()).thenReturn("john");
         when(taskService.getUserTasks("john")).thenReturn(List.of());
 
@@ -97,11 +147,12 @@ public class TaskControllerTest {
 
         verify(bindingResult).reject("task.error", "Planned finish date cannot be before task date");
         assertEquals(view, "tasks");
+        assertEquals(model.getAttribute("selectedStatus"), "ALL");
     }
 
     @Test
     public void markTaskCompletedShouldDelegateAndRedirect() {
-        org.springframework.security.core.Authentication authentication = Mockito.mock(org.springframework.security.core.Authentication.class);
+        Authentication authentication = Mockito.mock(Authentication.class);
         when(authentication.getName()).thenReturn("john");
 
         String view = taskController.markTaskCompleted(authentication, "task-1");
