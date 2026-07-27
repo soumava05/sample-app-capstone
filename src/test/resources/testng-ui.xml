@@ -1,0 +1,11 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd" >
+<suite name="Todo UI Suite">
+    <listeners>
+        <listener class-name="com.capstone.todo.ui.listeners.ExtentTestNgListener"/>
+    </listeners>
+    <test name="Task Dashboard Filter UI Tests">
+        <classes>
+            <class name="com.capstone.todo.ui.tests.TaskDashboardFilterUiTest"/>
+        </classes>
+    </test>
+</suite>
