@@ -100,4 +100,63 @@ public class TaskDashboardFilterUiTest extends BaseUiTest {
         Assert.assertTrue(tasksPage.hasTaskWithTitle(titleToComplete), "Completed task should appear in COMPLETED filter");
         Assert.assertFalse(tasksPage.hasTaskWithTitle(titleOpen), "Open task should not appear in COMPLETED filter");
     }
+
+    @Test(description = "Verify inclusive date range filter keeps tasks on boundary dates and removes out-of-range tasks")
+    public void shouldFilterTasksByInclusiveDateRange() {
+        String username = TestDataFactory.uniqueUsername("boundaryuser");
+        String password = "Password@123";
+        String titleFromBoundary = TestDataFactory.uniqueTaskTitle("FromBoundary");
+        String titleToBoundary = TestDataFactory.uniqueTaskTitle("ToBoundary");
+        String titleOutOfRange = TestDataFactory.uniqueTaskTitle("OutOfRange");
+        String dateFrom = TestDataFactory.today();
+        String dateTo = TestDataFactory.plusDays(2);
+
+        new RegisterPage(page)
+            .open(BASE_URL)
+            .register(username, "Boundary User", password, password);
+
+        new LoginPage(page)
+            .login(username, password);
+
+        TasksPage tasksPage = new TasksPage(page);
+        Assert.assertTrue(tasksPage.isDisplayed(), "Tasks dashboard should be displayed after login");
+
+        tasksPage.createTask(titleFromBoundary, "Task on lower boundary", dateFrom, TestDataFactory.plusDays(3));
+        tasksPage.createTask(titleToBoundary, "Task on upper boundary", dateTo, TestDataFactory.plusDays(4));
+        tasksPage.createTask(titleOutOfRange, "Task outside range", TestDataFactory.plusDays(5), TestDataFactory.plusDays(6));
+
+        tasksPage.setDateFrom(dateFrom);
+        tasksPage.setDateTo(dateTo);
+        tasksPage.applyFilters();
+
+        Assert.assertTrue(tasksPage.hasTaskWithTitle(titleFromBoundary), "Task on dateFrom boundary should be visible");
+        Assert.assertTrue(tasksPage.hasTaskWithTitle(titleToBoundary), "Task on dateTo boundary should be visible");
+        Assert.assertFalse(tasksPage.hasTaskWithTitle(titleOutOfRange), "Task outside inclusive range should be filtered out");
+    }
+
+    @Test(description = "Verify no matching filters show empty state")
+    public void shouldShowEmptyStateWhenNoTasksMatchFilters() {
+        String username = TestDataFactory.uniqueUsername("emptyuser");
+        String password = "Password@123";
+        String title = TestDataFactory.uniqueTaskTitle("VisibleTask");
+
+        new RegisterPage(page)
+            .open(BASE_URL)
+            .register(username, "Empty User", password, password);
+
+        new LoginPage(page)
+            .login(username, password);
+
+        TasksPage tasksPage = new TasksPage(page);
+        Assert.assertTrue(tasksPage.isDisplayed(), "Tasks dashboard should be displayed after login");
+
+        tasksPage.createTask(title, "Task that should not match query", TestDataFactory.today(), TestDataFactory.plusDays(1));
+
+        tasksPage.enterKeyword("no-such-keyword-xyz");
+        tasksPage.applyFilters();
+
+        Assert.assertTrue(tasksPage.isEmptyStateVisible(), "Empty state should be shown when no tasks match");
+        Assert.assertTrue(tasksPage.getEmptyStateText().toLowerCase().contains("no tasks"), "Empty state should explain that no tasks were found");
+        Assert.assertFalse(tasksPage.hasTaskWithTitle(title), "Existing task should not appear when it does not match filter");
+    }
 }
