@@ -2,6 +2,7 @@ package com.capstone.todo.service.impl;
 
 import com.capstone.todo.domain.TaskStatus;
 import com.capstone.todo.domain.TodoTask;
+import com.capstone.todo.dto.TaskFilterForm;
 import com.capstone.todo.dto.TaskForm;
 import com.capstone.todo.repository.TaskRepository;
 import org.mockito.ArgumentCaptor;
@@ -87,15 +88,13 @@ public class DefaultTaskServiceTest {
 
     @Test
     public void markCompletedShouldUpdateTaskStatus() {
-        TodoTask existingTask = new TodoTask(
+        TodoTask existingTask = task(
             "task-1",
             "alice",
             "Task",
             "Desc",
             LocalDate.of(2026, 6, 20),
-            LocalDate.of(2026, 6, 21),
-            TaskStatus.OPEN,
-            LocalDateTime.now()
+            TaskStatus.OPEN
         );
 
         when(taskRepository.findById("alice", "task-1")).thenReturn(Optional.of(existingTask));
@@ -129,6 +128,140 @@ public class DefaultTaskServiceTest {
         assertEquals(tasks.get(0).getId(), "task-1");
     }
 
+    @Test
+    public void getUserTasksShouldFilterByKeywordInTitleCaseInsensitively() {
+        when(taskRepository.findByUsername("alice")).thenReturn(List.of(
+            task("task-1", "alice", "Prepare Release Notes", "Desc", LocalDate.of(2026, 6, 20), TaskStatus.OPEN),
+            task("task-2", "alice", "Sprint Demo", "Desc", LocalDate.of(2026, 6, 21), TaskStatus.OPEN)
+        ));
+
+        TaskFilterForm filter = new TaskFilterForm();
+        filter.setKeyword("release");
+
+        List<TodoTask> tasks = taskService.getUserTasks("Alice", filter);
+
+        assertEquals(tasks.size(), 1);
+        assertEquals(tasks.get(0).getId(), "task-1");
+    }
+
+    @Test
+    public void getUserTasksShouldFilterByKeywordInDescriptionCaseInsensitively() {
+        when(taskRepository.findByUsername("alice")).thenReturn(List.of(
+            task("task-1", "alice", "Task One", "Plan Production Rollout", LocalDate.of(2026, 6, 20), TaskStatus.OPEN),
+            task("task-2", "alice", "Task Two", "Backlog refinement", LocalDate.of(2026, 6, 21), TaskStatus.OPEN)
+        ));
+
+        TaskFilterForm filter = new TaskFilterForm();
+        filter.setKeyword("rollout");
+
+        List<TodoTask> tasks = taskService.getUserTasks("Alice", filter);
+
+        assertEquals(tasks.size(), 1);
+        assertEquals(tasks.get(0).getId(), "task-1");
+    }
+
+    @Test
+    public void getUserTasksShouldFilterByOpenStatus() {
+        when(taskRepository.findByUsername("alice")).thenReturn(List.of(
+            task("task-1", "alice", "Open Task", "Desc", LocalDate.of(2026, 6, 20), TaskStatus.OPEN),
+            task("task-2", "alice", "Completed Task", "Desc", LocalDate.of(2026, 6, 21), TaskStatus.COMPLETED)
+        ));
+
+        TaskFilterForm filter = new TaskFilterForm();
+        filter.setStatus("OPEN");
+
+        List<TodoTask> tasks = taskService.getUserTasks("Alice", filter);
+
+        assertEquals(tasks.size(), 1);
+        assertEquals(tasks.get(0).getStatus(), TaskStatus.OPEN);
+    }
+
+    @Test
+    public void getUserTasksShouldFilterByCompletedStatus() {
+        when(taskRepository.findByUsername("alice")).thenReturn(List.of(
+            task("task-1", "alice", "Open Task", "Desc", LocalDate.of(2026, 6, 20), TaskStatus.OPEN),
+            task("task-2", "alice", "Completed Task", "Desc", LocalDate.of(2026, 6, 21), TaskStatus.COMPLETED)
+        ));
+
+        TaskFilterForm filter = new TaskFilterForm();
+        filter.setStatus("COMPLETED");
+
+        List<TodoTask> tasks = taskService.getUserTasks("Alice", filter);
+
+        assertEquals(tasks.size(), 1);
+        assertEquals(tasks.get(0).getStatus(), TaskStatus.COMPLETED);
+    }
+
+    @Test
+    public void getUserTasksShouldTreatAllStatusAsNoStatusFilter() {
+        when(taskRepository.findByUsername("alice")).thenReturn(List.of(
+            task("task-1", "alice", "Open Task", "Desc", LocalDate.of(2026, 6, 20), TaskStatus.OPEN),
+            task("task-2", "alice", "Completed Task", "Desc", LocalDate.of(2026, 6, 21), TaskStatus.COMPLETED)
+        ));
+
+        TaskFilterForm filter = new TaskFilterForm();
+        filter.setStatus("ALL");
+
+        List<TodoTask> tasks = taskService.getUserTasks("Alice", filter);
+
+        assertEquals(tasks.size(), 2);
+    }
+
+    @Test
+    public void getUserTasksShouldApplyCombinedFiltersWithAndSemantics() {
+        when(taskRepository.findByUsername("alice")).thenReturn(List.of(
+            task("task-1", "alice", "Release Plan", "Prod rollout", LocalDate.of(2026, 6, 20), TaskStatus.OPEN),
+            task("task-2", "alice", "Release Plan", "Prod rollout", LocalDate.of(2026, 6, 21), TaskStatus.COMPLETED),
+            task("task-3", "alice", "Backlog", "Prod rollout", LocalDate.of(2026, 6, 20), TaskStatus.OPEN)
+        ));
+
+        TaskFilterForm filter = new TaskFilterForm();
+        filter.setKeyword("release");
+        filter.setStatus("OPEN");
+        filter.setDateFrom(LocalDate.of(2026, 6, 20));
+        filter.setDateTo(LocalDate.of(2026, 6, 20));
+
+        List<TodoTask> tasks = taskService.getUserTasks("Alice", filter);
+
+        assertEquals(tasks.size(), 1);
+        assertEquals(tasks.get(0).getId(), "task-1");
+    }
+
+    @Test
+    public void getUserTasksShouldApplyInclusiveDateRange() {
+        when(taskRepository.findByUsername("alice")).thenReturn(List.of(
+            task("task-1", "alice", "Day One", "Desc", LocalDate.of(2026, 6, 20), TaskStatus.OPEN),
+            task("task-2", "alice", "Day Two", "Desc", LocalDate.of(2026, 6, 21), TaskStatus.OPEN),
+            task("task-3", "alice", "Day Three", "Desc", LocalDate.of(2026, 6, 22), TaskStatus.OPEN)
+        ));
+
+        TaskFilterForm filter = new TaskFilterForm();
+        filter.setDateFrom(LocalDate.of(2026, 6, 20));
+        filter.setDateTo(LocalDate.of(2026, 6, 21));
+
+        List<TodoTask> tasks = taskService.getUserTasks("Alice", filter);
+
+        assertEquals(tasks.size(), 2);
+        assertEquals(tasks.get(0).getId(), "task-1");
+        assertEquals(tasks.get(1).getId(), "task-2");
+    }
+
+    @Test
+    public void getUserTasksShouldFailForInvalidDateRange() {
+        when(taskRepository.findByUsername("alice")).thenReturn(List.of(task(
+            "task-1", "alice", "Task", "Desc", LocalDate.of(2026, 6, 20), TaskStatus.OPEN
+        )));
+
+        TaskFilterForm filter = new TaskFilterForm();
+        filter.setDateFrom(LocalDate.of(2026, 6, 21));
+        filter.setDateTo(LocalDate.of(2026, 6, 20));
+
+        IllegalArgumentException exception = expectThrows(IllegalArgumentException.class,
+            () -> taskService.getUserTasks("Alice", filter));
+
+        assertEquals(exception.getMessage(), "Date From cannot be after Date To");
+    }
+
     private TaskForm taskForm(String title, String description, LocalDate taskDate, LocalDate plannedFinishDate) {
         TaskForm taskForm = new TaskForm();
         taskForm.setTitle(title);
@@ -136,5 +269,18 @@ public class DefaultTaskServiceTest {
         taskForm.setTaskDate(taskDate);
         taskForm.setPlannedFinishDate(plannedFinishDate);
         return taskForm;
+    }
+
+    private TodoTask task(String id, String username, String title, String description, LocalDate taskDate, TaskStatus status) {
+        return new TodoTask(
+            id,
+            username,
+            title,
+            description,
+            taskDate,
+            taskDate.plusDays(1),
+            status,
+            LocalDateTime.now()
+        );
     }
 }

@@ -1,5 +1,6 @@
 package com.capstone.todo.web;
 
+import com.capstone.todo.dto.TaskFilterForm;
 import com.capstone.todo.dto.TaskForm;
 import com.capstone.todo.service.TaskService;
 import jakarta.validation.Valid;
@@ -27,11 +28,20 @@ public class TaskController {
     }
 
     @GetMapping("/tasks")
-    public String taskDashboard(Authentication authentication, Model model) {
+    public String taskDashboard(Authentication authentication,
+                                @ModelAttribute("filter") TaskFilterForm taskFilterForm,
+                                Model model) {
         String username = authentication.getName();
-        model.addAttribute("tasks", taskService.getUserTasks(username));
+        model.addAttribute("filter", taskFilterForm);
         model.addAttribute("taskForm", new TaskForm());
         model.addAttribute("username", username);
+
+        try {
+            model.addAttribute("tasks", taskService.getUserTasks(username, taskFilterForm));
+        } catch (IllegalArgumentException exception) {
+            model.addAttribute("tasks", taskService.getUserTasks(username));
+            model.addAttribute("filterError", exception.getMessage());
+        }
         return "tasks";
     }
 
@@ -41,6 +51,7 @@ public class TaskController {
                              BindingResult bindingResult,
                              Model model) {
         String username = authentication.getName();
+        model.addAttribute("filter", new TaskFilterForm());
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("tasks", taskService.getUserTasks(username));

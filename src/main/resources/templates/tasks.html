@@ -19,6 +19,40 @@
     </header>
 
     <section class="card">
+        <h2>Search and Filter Tasks</h2>
+
+        <div th:if="${filterError}" class="alert error" th:text="${filterError}"></div>
+
+        <form th:action="@{/tasks}" th:object="${filter}" method="get" class="form-grid">
+            <label for="keyword">Keyword</label>
+            <input id="keyword" type="text" th:field="*{keyword}" placeholder="Search title or description">
+
+            <label for="status">Status</label>
+            <select id="status" th:field="*{status}">
+                <option value="">ALL</option>
+                <option value="OPEN">OPEN</option>
+                <option value="COMPLETED">COMPLETED</option>
+            </select>
+
+            <div class="date-grid">
+                <div>
+                    <label for="dateFrom">Task Date From</label>
+                    <input id="dateFrom" type="date" th:field="*{dateFrom}">
+                </div>
+                <div>
+                    <label for="dateTo">Task Date To</label>
+                    <input id="dateTo" type="date" th:field="*{dateTo}">
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" class="btn">Apply Filters</button>
+                <a th:href="@{/tasks}" class="btn secondary">Clear Filters</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="card">
         <h2>Create New Task</h2>
 
         <div th:if="${#fields.hasGlobalErrors()}" class="alert error" th:each="error : ${#fields.globalErrors()}"
@@ -55,7 +89,7 @@
         <h2>My Task List</h2>
 
         <div th:if="${#lists.isEmpty(tasks)}" class="empty-state">
-            No tasks yet. Add your first task above.
+            No tasks found for the selected filters.
         </div>
 
         <div class="task-list" th:if="${!#lists.isEmpty(tasks)}">
