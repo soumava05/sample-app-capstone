@@ -2,6 +2,7 @@ package com.capstone.todo.service.impl;
 
 import com.capstone.todo.domain.TaskStatus;
 import com.capstone.todo.domain.TodoTask;
+import com.capstone.todo.dto.TaskFilterForm;
 import com.capstone.todo.dto.TaskForm;
 import com.capstone.todo.repository.TaskRepository;
 import com.capstone.todo.service.TaskService;
@@ -41,7 +42,29 @@ public class DefaultTaskService implements TaskService {
 
     @Override
     public List<TodoTask> getUserTasks(String username) {
-        return taskRepository.findByUsername(normalizeUsername(username));
+        return getUserTasks(username, null);
+    }
+
+    @Override
+    public List<TodoTask> getUserTasks(String username, TaskFilterForm taskFilterForm) {
+        List<TodoTask> userTasks = taskRepository.findByUsername(normalizeUsername(username));
+        if (taskFilterForm == null || !taskFilterForm.hasAnyFilter()) {
+            return userTasks;
+        }
+
+        validateFilterDates(taskFilterForm);
+
+        String normalizedKeyword = taskFilterForm.hasKeyword()
+            ? taskFilterForm.getKeyword().trim().toLowerCase(Locale.ROOT)
+            : null;
+        TaskStatus status = taskFilterForm.getResolvedStatus();
+
+        return userTasks.stream()
+            .filter(task -> matchesKeyword(task, normalizedKeyword))
+            .filter(task -> matchesStatus(task, status))
+            .filter(task -> matchesDateFrom(task, taskFilterForm.getDateFrom()))
+            .filter(task -> matchesDateTo(task, taskFilterForm.getDateTo()))
+            .toList();
     }
 
     @Override
@@ -53,6 +76,28 @@ public class DefaultTaskService implements TaskService {
         taskRepository.update(task);
     }
 
+    private boolean matchesKeyword(TodoTask task, String normalizedKeyword) {
+        if (normalizedKeyword == null) {
+            return true;
+        }
+
+        String title = task.getTitle() == null ? "" : task.getTitle().toLowerCase(Locale.ROOT);
+        String description = task.getDescription() == null ? "" : task.getDescription().toLowerCase(Locale.ROOT);
+        return title.contains(normalizedKeyword) || description.contains(normalizedKeyword);
+    }
+
+    private boolean matchesStatus(TodoTask task, TaskStatus status) {
+        return status == null || task.getStatus() == status;
+    }
+
+    private boolean matchesDateFrom(TodoTask task, java.time.LocalDate dateFrom) {
+        return dateFrom == null || !task.getTaskDate().isBefore(dateFrom);
+    }
+
+    private boolean matchesDateTo(TodoTask task, java.time.LocalDate dateTo) {
+        return dateTo == null || !task.getTaskDate().isAfter(dateTo);
+    }
+
     private String normalizeUsername(String username) {
         return username.trim().toLowerCase(Locale.ROOT);
     }
@@ -60,6 +105,14 @@ public class DefaultTaskService implements TaskService {
     private void validateTaskDates(TaskForm taskForm) {
         if (taskForm.getPlannedFinishDate().isBefore(taskForm.getTaskDate())) {
             throw new IllegalArgumentException("Planned finish date cannot be before task date");
+        }
+    }
+
+    private void validateFilterDates(TaskFilterForm taskFilterForm) {
+        if (taskFilterForm.getDateFrom() != null
+            && taskFilterForm.getDateTo() != null
+            && taskFilterForm.getDateFrom().isAfter(taskFilterForm.getDateTo())) {
+            throw new IllegalArgumentException("Date From cannot be after Date To");
         }
     }
 }
