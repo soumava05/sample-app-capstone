@@ -2,6 +2,8 @@ package com.capstone.todo.service.impl;
 
 import com.capstone.todo.domain.TaskStatus;
 import com.capstone.todo.domain.TodoTask;
+import com.capstone.todo.dto.TaskFilterCriteria;
+import com.capstone.todo.dto.TaskFilterStatus;
 import com.capstone.todo.dto.TaskForm;
 import com.capstone.todo.repository.TaskRepository;
 import org.mockito.ArgumentCaptor;
@@ -127,6 +129,74 @@ public class DefaultTaskServiceTest {
 
         assertEquals(tasks.size(), 1);
         assertEquals(tasks.get(0).getId(), "task-1");
+    }
+
+    @Test
+    public void getUserTasksShouldFilterByOpenStatus() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        TaskFilterCriteria criteria = new TaskFilterCriteria();
+        criteria.setStatus(TaskFilterStatus.OPEN);
+
+        List<TodoTask> tasks = taskService.getUserTasks("alice", criteria);
+
+        assertEquals(tasks.size(), 2);
+        assertEquals(tasks.get(0).getId(), "task-1");
+        assertEquals(tasks.get(1).getId(), "task-3");
+    }
+
+    @Test
+    public void getUserTasksShouldFilterByFromDate() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        TaskFilterCriteria criteria = new TaskFilterCriteria();
+        criteria.setFrom(LocalDate.of(2026, 6, 21));
+
+        List<TodoTask> tasks = taskService.getUserTasks("alice", criteria);
+
+        assertEquals(tasks.size(), 2);
+        assertEquals(tasks.get(0).getId(), "task-2");
+        assertEquals(tasks.get(1).getId(), "task-3");
+    }
+
+    @Test
+    public void getUserTasksShouldFilterByToDate() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        TaskFilterCriteria criteria = new TaskFilterCriteria();
+        criteria.setTo(LocalDate.of(2026, 6, 21));
+
+        List<TodoTask> tasks = taskService.getUserTasks("alice", criteria);
+
+        assertEquals(tasks.size(), 2);
+        assertEquals(tasks.get(0).getId(), "task-1");
+        assertEquals(tasks.get(1).getId(), "task-2");
+    }
+
+    @Test
+    public void getUserTasksShouldCombineStatusAndDateFilters() {
+        when(taskRepository.findByUsername("alice")).thenReturn(sampleTasks());
+
+        TaskFilterCriteria criteria = new TaskFilterCriteria();
+        criteria.setStatus(TaskFilterStatus.COMPLETED);
+        criteria.setFrom(LocalDate.of(2026, 6, 21));
+        criteria.setTo(LocalDate.of(2026, 6, 21));
+
+        List<TodoTask> tasks = taskService.getUserTasks("alice", criteria);
+
+        assertEquals(tasks.size(), 1);
+        assertEquals(tasks.get(0).getId(), "task-2");
+    }
+
+    private List<TodoTask> sampleTasks() {
+        return List.of(
+            new TodoTask("task-1", "alice", "Open One", "Desc", LocalDate.of(2026, 6, 20),
+                LocalDate.of(2026, 6, 21), TaskStatus.OPEN, LocalDateTime.of(2026, 6, 1, 9, 0)),
+            new TodoTask("task-2", "alice", "Completed", "Desc", LocalDate.of(2026, 6, 21),
+                LocalDate.of(2026, 6, 22), TaskStatus.COMPLETED, LocalDateTime.of(2026, 6, 1, 10, 0)),
+            new TodoTask("task-3", "alice", "Open Two", "Desc", LocalDate.of(2026, 6, 22),
+                LocalDate.of(2026, 6, 23), TaskStatus.OPEN, LocalDateTime.of(2026, 6, 1, 11, 0))
+        );
     }
 
     private TaskForm taskForm(String title, String description, LocalDate taskDate, LocalDate plannedFinishDate) {

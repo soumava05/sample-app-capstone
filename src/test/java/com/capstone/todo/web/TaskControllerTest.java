@@ -1,5 +1,7 @@
 package com.capstone.todo.web;
 
+import com.capstone.todo.dto.TaskFilterCriteria;
+import com.capstone.todo.dto.TaskFilterStatus;
 import com.capstone.todo.dto.TaskForm;
 import com.capstone.todo.service.TaskService;
 import org.mockito.Mockito;
@@ -9,11 +11,13 @@ import org.springframework.validation.BindingResult;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -38,18 +42,63 @@ public class TaskControllerTest {
     }
 
     @Test
-    public void taskDashboardShouldPopulateModelAndReturnTasksView() {
+    public void taskDashboardShouldPopulateDefaultFilterModelAndReturnTasksView() {
         org.springframework.security.core.Authentication authentication = Mockito.mock(org.springframework.security.core.Authentication.class);
         when(authentication.getName()).thenReturn("john");
-        when(taskService.getUserTasks("john")).thenReturn(List.of());
+        when(taskService.getUserTasks(eq("john"), any(TaskFilterCriteria.class))).thenReturn(List.of());
         Model model = new ConcurrentModel();
 
-        String view = taskController.taskDashboard(authentication, model);
+        String view = taskController.taskDashboard(authentication, TaskFilterStatus.ALL, null, null, model);
 
         assertEquals(view, "tasks");
         assertNotNull(model.getAttribute("tasks"));
         assertNotNull(model.getAttribute("taskForm"));
         assertEquals(model.getAttribute("username"), "john");
+        assertNotNull(model.getAttribute("filterCriteria"));
+        assertNotNull(model.getAttribute("filterStatuses"));
+    }
+
+    @Test
+    public void taskDashboardShouldUseQueryParametersForFiltering() {
+        org.springframework.security.core.Authentication authentication = Mockito.mock(org.springframework.security.core.Authentication.class);
+        when(authentication.getName()).thenReturn("john");
+        when(taskService.getUserTasks(eq("john"), any(TaskFilterCriteria.class))).thenReturn(List.of());
+        Model model = new ConcurrentModel();
+
+        String view = taskController.taskDashboard(
+            authentication,
+            TaskFilterStatus.OPEN,
+            LocalDate.of(2026, 6, 1),
+            LocalDate.of(2026, 6, 30),
+            model
+        );
+
+        assertEquals(view, "tasks");
+        TaskFilterCriteria filterCriteria = (TaskFilterCriteria) model.getAttribute("filterCriteria");
+        assertEquals(filterCriteria.getStatus(), TaskFilterStatus.OPEN);
+        assertEquals(filterCriteria.getFrom(), LocalDate.of(2026, 6, 1));
+        assertEquals(filterCriteria.getTo(), LocalDate.of(2026, 6, 30));
+        verify(taskService).getUserTasks(eq("john"), any(TaskFilterCriteria.class));
+    }
+
+    @Test
+    public void taskDashboardShouldShowValidationErrorAndFallbackToUnfilteredTasksForInvalidRange() {
+        org.springframework.security.core.Authentication authentication = Mockito.mock(org.springframework.security.core.Authentication.class);
+        when(authentication.getName()).thenReturn("john");
+        when(taskService.getUserTasks("john")).thenReturn(List.of());
+        Model model = new ConcurrentModel();
+
+        String view = taskController.taskDashboard(
+            authentication,
+            TaskFilterStatus.ALL,
+            LocalDate.of(2026, 7, 1),
+            LocalDate.of(2026, 6, 1),
+            model
+        );
+
+        assertEquals(view, "tasks");
+        assertEquals(model.getAttribute("filterError"), "From date cannot be after To date.");
+        verify(taskService).getUserTasks("john");
     }
 
     @Test
@@ -65,6 +114,7 @@ public class TaskControllerTest {
         String view = taskController.createTask(authentication, new TaskForm(), bindingResult, model);
 
         assertEquals(view, "tasks");
+        assertNotNull(model.getAttribute("filterCriteria"));
     }
 
     @Test
@@ -97,6 +147,7 @@ public class TaskControllerTest {
 
         verify(bindingResult).reject("task.error", "Planned finish date cannot be before task date");
         assertEquals(view, "tasks");
+        assertNotNull(model.getAttribute("filterCriteria"));
     }
 
     @Test
