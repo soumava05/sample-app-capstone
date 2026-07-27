@@ -54,8 +54,40 @@
     <section class="card">
         <h2>My Task List</h2>
 
-        <div th:if="${#lists.isEmpty(tasks)}" class="empty-state">
+        <form th:action="@{/tasks}" method="get" class="form-grid">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option th:each="filterStatus : ${filterStatuses}"
+                        th:value="${filterStatus.name()}"
+                        th:text="${#strings.capitalize(#strings.toLowerCase(filterStatus.name()))}"
+                        th:selected="${filterCriteria.status == filterStatus}"></option>
+            </select>
+
+            <div class="date-grid">
+                <div>
+                    <label for="from">From</label>
+                    <input id="from" type="date" name="from" th:value="${filterCriteria.from}">
+                </div>
+                <div>
+                    <label for="to">To</label>
+                    <input id="to" type="date" name="to" th:value="${filterCriteria.to}">
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" class="btn">Apply Filters</button>
+                <a th:href="@{/tasks}" class="btn secondary">Clear Filters</a>
+            </div>
+        </form>
+
+        <div th:if="${filterError}" class="alert error" th:text="${filterError}"></div>
+
+        <div th:if="${#lists.isEmpty(tasks) and filterCriteria.status.name() == 'ALL' and filterCriteria.from == null and filterCriteria.to == null}" class="empty-state">
             No tasks yet. Add your first task above.
+        </div>
+
+        <div th:if="${#lists.isEmpty(tasks) and !(filterCriteria.status.name() == 'ALL' and filterCriteria.from == null and filterCriteria.to == null)}" class="empty-state">
+            No tasks match your filters.
         </div>
 
         <div class="task-list" th:if="${!#lists.isEmpty(tasks)}">

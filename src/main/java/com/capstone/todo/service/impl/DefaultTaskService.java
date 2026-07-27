@@ -2,6 +2,8 @@ package com.capstone.todo.service.impl;
 
 import com.capstone.todo.domain.TaskStatus;
 import com.capstone.todo.domain.TodoTask;
+import com.capstone.todo.dto.TaskFilterCriteria;
+import com.capstone.todo.dto.TaskFilterStatus;
 import com.capstone.todo.dto.TaskForm;
 import com.capstone.todo.repository.TaskRepository;
 import com.capstone.todo.service.TaskService;
@@ -45,12 +47,32 @@ public class DefaultTaskService implements TaskService {
     }
 
     @Override
+    public List<TodoTask> getUserTasks(String username, TaskFilterCriteria criteria) {
+        TaskFilterCriteria effectiveCriteria = criteria == null ? new TaskFilterCriteria() : criteria;
+        TaskFilterStatus status = effectiveCriteria.getStatus() == null ? TaskFilterStatus.ALL : effectiveCriteria.getStatus();
+
+        return getUserTasks(username).stream()
+            .filter(task -> matchesStatus(task, status))
+            .filter(task -> effectiveCriteria.getFrom() == null || !task.getTaskDate().isBefore(effectiveCriteria.getFrom()))
+            .filter(task -> effectiveCriteria.getTo() == null || !task.getTaskDate().isAfter(effectiveCriteria.getTo()))
+            .toList();
+    }
+
+    @Override
     public void markCompleted(String username, String taskId) {
         TodoTask task = taskRepository.findById(normalizeUsername(username), taskId)
             .orElseThrow(() -> new IllegalArgumentException("Task not found"));
 
         task.setStatus(TaskStatus.COMPLETED);
         taskRepository.update(task);
+    }
+
+    private boolean matchesStatus(TodoTask task, TaskFilterStatus status) {
+        return switch (status) {
+            case ALL -> true;
+            case OPEN -> task.getStatus() == TaskStatus.OPEN;
+            case COMPLETED -> task.getStatus() == TaskStatus.COMPLETED;
+        };
     }
 
     private String normalizeUsername(String username) {
