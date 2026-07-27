@@ -1,0 +1,5 @@
+# EPMCDMETST-56035 Solution Diagrams
+
+## High-Level Design
+
+The solution extends the existing Spring Boot MVC todo application with a task status filter on the authenticated user's dashboard. The filter is expressed as a query parameter on `/tasks`, is rendered by Thymeleaf, and is applied through the existing controller-service-repository boundary.
