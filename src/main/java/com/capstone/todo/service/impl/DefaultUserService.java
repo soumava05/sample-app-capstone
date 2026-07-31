@@ -2,6 +2,7 @@ package com.capstone.todo.service.impl;
 
 import com.capstone.todo.domain.User;
 import com.capstone.todo.dto.RegistrationForm;
+import com.capstone.todo.exception.ValidationException;
 import com.capstone.todo.repository.UserRepository;
 import com.capstone.todo.service.UserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,7 +29,7 @@ public class DefaultUserService implements UserService {
 
         String normalizedUsername = registrationForm.getUsername().trim().toLowerCase(Locale.ROOT);
         if (userRepository.findByUsername(normalizedUsername).isPresent()) {
-            throw new IllegalArgumentException("Username is already taken");
+            throw new ValidationException("Username is already taken");
         }
 
         User user = new User(
@@ -48,7 +49,7 @@ public class DefaultUserService implements UserService {
 
     private void validatePasswordConfirmation(String password, String confirmPassword) {
         if (!password.equals(confirmPassword)) {
-            throw new IllegalArgumentException("Password and confirm password must match");
+            throw new ValidationException("Password and confirm password must match");
         }
     }
 }

@@ -1,0 +1,12 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd" >
+<suite name="UI Automation Suite">
+  <listeners>
+    <listener class-name="listeners.ExtentTestNGListener"/>
+  </listeners>
+
+  <test name="EPMCDMETST-51892 UI Tests">
+    <classes>
+      <class name="tests.EPMCDMETST51892UiErrorHandlingTest"/>
+    </classes>
+  </test>
+</suite>

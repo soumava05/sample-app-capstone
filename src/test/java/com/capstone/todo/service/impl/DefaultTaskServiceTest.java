@@ -3,6 +3,8 @@ package com.capstone.todo.service.impl;
 import com.capstone.todo.domain.TaskStatus;
 import com.capstone.todo.domain.TodoTask;
 import com.capstone.todo.dto.TaskForm;
+import com.capstone.todo.exception.TaskNotFoundException;
+import com.capstone.todo.exception.ValidationException;
 import com.capstone.todo.repository.TaskRepository;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -79,7 +81,7 @@ public class DefaultTaskServiceTest {
             LocalDate.of(2026, 6, 20)
         );
 
-        IllegalArgumentException exception = expectThrows(IllegalArgumentException.class,
+        ValidationException exception = expectThrows(ValidationException.class,
             () -> taskService.createTask("alice", taskForm));
 
         assertEquals(exception.getMessage(), "Planned finish date cannot be before task date");
@@ -111,7 +113,7 @@ public class DefaultTaskServiceTest {
     public void markCompletedShouldFailWhenTaskDoesNotExist() {
         when(taskRepository.findById("alice", "task-404")).thenReturn(Optional.empty());
 
-        IllegalArgumentException exception = expectThrows(IllegalArgumentException.class,
+        TaskNotFoundException exception = expectThrows(TaskNotFoundException.class,
             () -> taskService.markCompleted("Alice", "task-404"));
 
         assertEquals(exception.getMessage(), "Task not found");

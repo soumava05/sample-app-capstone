@@ -2,6 +2,7 @@ package com.capstone.todo.service.impl;
 
 import com.capstone.todo.domain.User;
 import com.capstone.todo.dto.RegistrationForm;
+import com.capstone.todo.exception.ValidationException;
 import com.capstone.todo.repository.UserRepository;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -70,7 +71,7 @@ public class DefaultUserServiceTest {
         RegistrationForm registrationForm = registrationForm("john", "John", "Password123");
         registrationForm.setConfirmPassword("Different123");
 
-        IllegalArgumentException exception = expectThrows(IllegalArgumentException.class,
+        ValidationException exception = expectThrows(ValidationException.class,
             () -> userService.register(registrationForm));
 
         assertEquals(exception.getMessage(), "Password and confirm password must match");
@@ -81,7 +82,7 @@ public class DefaultUserServiceTest {
         RegistrationForm registrationForm = registrationForm("john", "John", "Password123");
         when(userRepository.findByUsername("john")).thenReturn(Optional.of(new User()));
 
-        IllegalArgumentException exception = expectThrows(IllegalArgumentException.class,
+        ValidationException exception = expectThrows(ValidationException.class,
             () -> userService.register(registrationForm));
 
         assertEquals(exception.getMessage(), "Username is already taken");
